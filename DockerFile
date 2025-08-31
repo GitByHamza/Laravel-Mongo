@@ -4,13 +4,13 @@ FROM php:8.3-apache
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     git unzip libzip-dev libpng-dev libonig-dev libxml2-dev pkg-config libssl-dev \
-    && docker-php-ext-install pdo_mysql zip bcmath gd
+    && docker-php-ext-install pdo_mysql zip bcmath gd \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install MongoDB extension
+# Install MongoDB extension & enable it
 RUN pecl install mongodb \
     && docker-php-ext-enable mongodb \
-    && composer install --no-dev --optimize-autoloader
-
+    && echo "extension=mongodb.so" > /usr/local/etc/php/conf.d/mongodb.ini
 
 # Enable Apache mod_rewrite for Laravel
 RUN a2enmod rewrite
@@ -18,20 +18,20 @@ RUN a2enmod rewrite
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy composer
+# Copy Composer from official image
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Copy project files
 COPY . .
 
-# Install dependencies
+# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Fix permissions for Laravel storage & cache
+# Fix permissions for Laravel
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Expose port 80
 EXPOSE 80
 
-# Start Apache in foreground
+# Start Apache
 CMD ["apache2-foreground"]
