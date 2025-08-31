@@ -19,9 +19,6 @@ class Product extends Model
         'brand', 'views'
     ];
     
-    // // 👇 1. ADD THIS PROPERTY BACK
-    // protected $appends = ['id'];
-
     protected $casts = [
         'categories' => 'array',
         'sizes' => 'array',
@@ -30,12 +27,4 @@ class Product extends Model
         'stock' => 'integer',
         'is_featured' => 'boolean',
     ];
-
-    // 👇 2. ADD THIS NEW-AND-IMPROVED FUNCTION
-    // This uses Eloquent's official getKey() method, which is the most reliable
-    // way to get the model's primary key (_id).
-    // public function getIdAttribute($value = null)
-    // {
-    //     return $this->getKey();
-    // }
 }
