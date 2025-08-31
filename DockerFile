@@ -1,39 +1,37 @@
-# Use PHP with Apache
-FROM php:8.2-apache
+# Use official PHP with Apache
+FROM php:8.3-apache
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    git unzip libpng-dev libonig-dev libxml2-dev zip curl pkg-config libssl-dev
+    git unzip libzip-dev libpng-dev libonig-dev libxml2-dev pkg-config libssl-dev \
+    && docker-php-ext-install pdo_mysql zip bcmath gd
 
-# Install PHP extensions (pdo, gd, etc.)
-RUN docker-php-ext-install pdo pdo_mysql
-
-# Install MongoDB PHP extension via PECL
+# Install MongoDB extension
 RUN pecl install mongodb \
-    && echo "extension=mongodb.so" > /usr/local/etc/php/conf.d/mongodb.ini
+    && docker-php-ext-enable mongodb \
+    && composer install --no-dev --optimize-autoloader
 
-# Enable Apache mod_rewrite
+
+# Enable Apache mod_rewrite for Laravel
 RUN a2enmod rewrite
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy app source
-COPY . /var/www/html
+# Copy composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Install Composer
-COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
+# Copy project files
+COPY . .
 
-# Install PHP dependencies
+# Install dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Set permissions for Laravel
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage \
-    && chmod -R 755 /var/www/html/bootstrap/cache
+# Fix permissions for Laravel storage & cache
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Expose Apache port
+# Expose port 80
 EXPOSE 80
 
-# Start Apache
+# Start Apache in foreground
 CMD ["apache2-foreground"]
